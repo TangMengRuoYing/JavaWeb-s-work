@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.gzy.mapper.UserAmountMapper">
+
+    <resultMap id="userAmountResultMap" type="com.gzy.entiy.UserAmount">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="amount" column="amount"/>
+        <result property="balance" column="balance"/>
+        <result property="state" column="state"/>
+        <result property="isDelete" column="is_deleted"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="nicknameAmount" column="nicknameAmount"/>
+        <result property="nameAmount" column="nameAmount"/>
+    </resultMap>
+
+    <!-- Get all user account information with pagination -->
+    <select id="getAllUserAmount" resultMap="userAmountResultMap">
+        SELECT ua.*, ui.nickname AS nicknameAmount, ui.name AS nameAmount
+        FROM user_amount AS ua
+                 LEFT JOIN banksystem.user_info ui ON ua.user_id = ui.id
+        WHERE ua.is_deleted = 0
+            LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- Add new account information -->
+    <insert id="add">
+        INSERT INTO user_amount(user_id, state, create_time, update_time)
+        VALUES(#{userId}, #{state}, NOW(), NOW())
+    </insert>
+
+    <!-- Delete account by user ID (logical deletion) -->
+    <update id="deleteById">
+        UPDATE user_amount SET is_deleted = 1, update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- Update account information by user ID -->
+    <update id="updateByUserId">
+        UPDATE user_amount SET state = #{state}, update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- Query account information by user ID -->
+    <select id="queryByUserId" resultMap="userAmountResultMap">
+        SELECT * FROM user_amount
+        WHERE user_id = #{userId} AND is_deleted = 0
+    </select>
+
+    <!-- Conditional query by nickname and name -->
+    <select id="queryByConditions" resultMap="userAmountResultMap">
+        SELECT ua.*, ui.nickname AS nicknameAmount, ui.name AS nameAmount
+        FROM user_amount AS ua
+        LEFT JOIN user_info ui ON ua.user_id = ui.id
+        WHERE ua.is_deleted = 0
+        <if test="nicknameAmount != null and nicknameAmount != ''">
+            AND ui.nickname LIKE CONCAT('%', #{nicknameAmount}, '%')
+        </if>
+        <if test="nameAmount != null and nameAmount != ''">
+            AND ui.name LIKE CONCAT('%', #{nameAmount}, '%')
+        </if>
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- Get total record count -->
+    <select id="getTotalCount" resultType="int">
+        SELECT COUNT(*) FROM user_amount WHERE is_deleted = 0
+    </select>
+
+</mapper>
